@@ -49,30 +49,38 @@ const HMR = {
     {
         //bind Van
         const origninalState = globalThis.van.state;
-        globalThis.van.state =(value, key="")=>
+        globalThis.van.state =(value, key=false)=>
         {
-            const type = typeof value;
-            let reader =d=>d;
-            let writer =d=>d?.toString() || null;
-
-            switch(type)
+            if(key)
             {
-                case "boolean" :
-                    reader =(data)=> data === "true"; break;
-                case "number" :
-                    reader = parseFloat; break;
-                case "object" :
-                    reader = JSON.parse;
-                    writer = JSON.stringify;
-                    break;
+                const type = typeof value;
+                let reader =d=>d;
+                let writer =d=>d?.toString() || null;
+    
+                switch(type)
+                {
+                    case "boolean" :
+                        reader =(data)=> data === "true"; break;
+                    case "number" :
+                        reader = parseFloat; break;
+                    case "object" :
+                        reader = JSON.parse;
+                        writer = JSON.stringify;
+                        break;
+                }
+    
+                const fullKey = "HMR_" + HMR.NextID() + key;
+                const stringValue = HMR.Load(fullKey);
+                const signal = origninalState((stringValue ? reader(stringValue) : value));
+                van.derive(()=>HMR.Save(fullKey, writer(signal.val)));
+    
+                return signal;
             }
-
-            const fullKey = "HMR_" + HMR.NextID() + key;
-            const stringValue = HMR.Load(fullKey);
-            const signal = origninalState((stringValue ? reader(stringValue) : value));
-            van.derive(()=>HMR.Save(fullKey, writer(signal.val)));
-
-            return signal;
+            else
+            {
+                return origninalState(value);
+            }
+            
         };
     },
 
